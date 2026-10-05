@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { deleteProduct, updateProduct, getProducts } from "@/lib/products";
+import { deleteProduct, updateProduct, addProduct } from "@/lib/products"; // ✅ นำเข้า addProduct
 import type { Product, ProductCategory } from "@/lib/products";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -22,7 +22,6 @@ export async function createProductAction(data: {
 }) {
   await requireUser();
 
-  const products = getProducts();
   const newProduct: Product = {
     id: `p${Date.now()}`,
     name: data.title,
@@ -33,7 +32,9 @@ export async function createProductAction(data: {
     description: `หมวดหมู่: ${data.category} (คงเหลือ ${data.stock} ชิ้น)`,
   };
 
-  products.unshift(newProduct);
+  // ✅ เรียกใช้ addProduct แทนการ unshift ตรงๆ
+  addProduct(newProduct);
+
   revalidatePath("/");
   return { success: true };
 }

@@ -61,21 +61,26 @@ export type SearchQuery = {
   category?: string;
 };
 
-// State ในหน่วยความจำสำหรับเก็บสินค้าที่ผู้ใช้กดเพิ่มผ่านฟอร์ม
+// ตัวแปร In-Memory สำหรับพักสินค้าที่เพิ่มใหม่ (ประกาศเพียงที่เดียว)
 declare global {
   // eslint-disable-next-line no-var
   var demoProducts: Product[] | undefined;
 }
 
-const customProducts = globalThis.demoProducts ?? [];
+const customProducts: Product[] = globalThis.demoProducts ?? [];
 
 if (process.env.NODE_ENV !== "production") {
   globalThis.demoProducts = customProducts;
 }
 
+// ฟังก์ชันสำหรับเพิ่มสินค้าใหม่
+export function addProduct(newProduct: Product) {
+  customProducts.unshift(newProduct);
+}
+
 const API_BASE = "https://dummyjson.com";
 
-// ฟังก์ชันดึงสินค้าที่รวมทั้ง DummyJSON API และ In-Memory
+// ฟังก์ชันดึงสินค้าจาก API รวมกับสินค้าในหน่วยความจำ
 export async function getProducts(query?: string): Promise<Product[]> {
   const q = query?.trim() ?? "";
   const params = new URLSearchParams();
@@ -87,8 +92,8 @@ export async function getProducts(query?: string): Promise<Product[]> {
     const endpoint = q
       ? `${API_BASE}/products/search?q=${encodeURIComponent(q)}&${params.toString()}`
       : `${API_BASE}/products?${params.toString()}`;
-    
-    const response = await fetch(endpoint, { next: { revalidate: 0 } });
+
+    const response = await fetch(endpoint, { cache: "no-store" });
     if (response.ok) {
       const data = await response.json();
       apiProducts = (data.products || []).map((item: any) => ({
@@ -106,7 +111,7 @@ export async function getProducts(query?: string): Promise<Product[]> {
     console.error("Fetch API error:", err);
   }
 
-  // กรองสินค้า In-memory ที่ผู้ใช้เพิ่มเอง
+  // กรองสินค้าที่ผู้ใช้เพิ่มเองใน Memory
   let filteredCustom = [...customProducts];
   if (q) {
     const lower = q.toLowerCase();

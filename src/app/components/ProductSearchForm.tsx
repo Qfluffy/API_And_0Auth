@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { SearchQuery } from "../../lib/products";
 
@@ -9,24 +9,38 @@ interface ProductSearchFormProps {
 }
 
 export default function ProductSearchForm({ onSearch }: ProductSearchFormProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") ?? "");
   const [isPending, startTransition] = useTransition();
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
+    const queryText = searchTerm.trim();
+
     startTransition(async () => {
+      // 1. ถ้ามี onSearch ส่งเข้ามา ให้เรียกใช้งาน
       if (onSearch) {
-        await onSearch({ q: searchTerm.trim() });
+        await onSearch({ q: queryText });
+      }
+
+      // 2. สั่งเปลี่ยน URL เพื่อให้ Server Component (page.tsx) กรองข้อมูลใหม่
+      if (queryText) {
+        router.push(`/?q=${encodeURIComponent(queryText)}`);
+      } else {
+        router.push("/");
       }
     });
   }
 
   function handleReset() {
     setSearchTerm("");
-    if (onSearch) {
-      onSearch({ q: "" });
-    }
+    startTransition(async () => {
+      if (onSearch) {
+        await onSearch({ q: "" });
+      }
+      router.push("/");
+    });
   }
 
   return (
@@ -43,7 +57,7 @@ export default function ProductSearchForm({ onSearch }: ProductSearchFormProps) 
           <button
             type="button"
             onClick={handleReset}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 hover:text-zinc-600"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 hover:text-zinc-600 cursor-pointer"
           >
             ล้าง
           </button>

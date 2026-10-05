@@ -2,12 +2,13 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { defaultQuery, fetchProducts } from "../../lib/products";
-import type { Product, ProductDraft, ProductList, SearchQuery } from "../../lib/products";
+import { getProducts } from "../../lib/products";
+import type { Product, ProductDraft, SearchQuery } from "../../lib/products";
 import ProductSearchForm from "./ProductSearchForm";
 import ProductForm from "./ProductForm";
 
 type LoadState = "loading" | "error" | "ready";
+const defaultQuery: SearchQuery = {};
 
 export default function ProductExplorer() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -18,8 +19,8 @@ export default function ProductExplorer() {
     loadProducts(defaultQuery);
   }, []);
 
-  function showResult(list: ProductList) {
-    setProducts(list.products);
+  function showResult(list: Product[]) {
+    setProducts(list);
     setStatus("ready");
   }
 
@@ -34,7 +35,7 @@ export default function ProductExplorer() {
     setStatus("loading");
     setErrorMessage("");
     try {
-      showResult(await fetchProducts(query));
+      showResult(await getProducts(query.q));
     } catch (error) {
       showError(error);
     }
