@@ -15,7 +15,7 @@ export default async function DeleteProductPage({ params }: DeleteProductPagePro
   }
 
   const { id } = await params;
-  const product = getProduct(id);
+  const product = await getProduct(id);
 
   if (!product) {
     notFound();

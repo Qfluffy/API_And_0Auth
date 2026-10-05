@@ -126,15 +126,39 @@ export async function getProducts(query?: string): Promise<Product[]> {
   return [...filteredCustom, ...apiProducts];
 }
 
-export function getProduct(id: string): Product | undefined {
-  return customProducts.find((p) => String(p.id) === String(id));
+export async function getProduct(id: string): Promise<Product | undefined> {
+  // 1. หาในสินค้าที่เพิ่มเองใน Memory ก่อน
+  const localProduct = customProducts.find((p) => String(p.id) === String(id));
+  if (localProduct) return localProduct;
+
+  // 2. ถ้าไม่เจอ ให้ไปดึงจาก DummyJSON API โดยตรง
+  try {
+    const response = await fetch(`${API_BASE}/products/${id}`);
+    if (response.ok) {
+      const item = await response.json();
+      return {
+        id: String(item.id),
+        name: item.title,
+        title: item.title,
+        price: Number(item.price),
+        description: item.description || `หมวดหมู่: ${item.category}`,
+        thumbnail: item.thumbnail,
+        stock: Number(item.stock),
+        category: (item.category as ProductCategory) || "smartphones",
+      };
+    }
+  } catch (err) {
+    console.error("Fetch product by id error:", err);
+  }
+
+  return undefined;
 }
 
-export function updateProduct(
+export async function updateProduct(
   id: string,
   values: Partial<Omit<Product, "id">>
 ) {
-  const product = getProduct(id);
+  const product = await getProduct(id);
   if (!product) return;
   if (values.name !== undefined) product.name = values.name;
   if (values.title !== undefined) product.title = values.title;
